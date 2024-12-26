@@ -1,2 +1,2 @@
-FLASK_APP=./src/app.py
+FLASK_APP=./app/run.py
 FLASK_DEBUG=1
