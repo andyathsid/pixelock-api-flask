@@ -1,7 +1,8 @@
 import requests
 import json
+import os
 
-BASE_URL = 'http://13.250.38.115:5000/api'
+BASE_URL = os.getenv('API_BASE_URL', 'http://localhost:5000/api')
 
 def run_full_test():
     """Run a complete encode-decode cycle test"""
