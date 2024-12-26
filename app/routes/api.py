@@ -20,9 +20,9 @@ def encode_image():
         return jsonify({'error': 'Image URL and message are required'}), 400
         
     # Get cipher parameters with defaults
-    shift_key = data.get('key', 3)  # Default shift of 3
-    alphabet = data.get('alphabet', 'abcdefghijklmnopqrstuvwxyz')
-    case_strategy = data.get('case_strategy', 'maintain')  # or 'strict' or 'ignore'
+    shift_key = data.get('key')  
+    alphabet = data.get('alphabet')
+    case_strategy = data.get('case_strategy')  
     ignore_foreign = data.get('ignore_foreign', False)
     
     try:
@@ -48,6 +48,7 @@ def encode_image():
         
         # Encode the encrypted message into the image
         encoded_key = encode_key(shift_key, alphabet)
+        print(f"Encoded Key: {encoded_key}")
         steg_message = f"{encoded_key}|{encrypted_text}"
         encoded_image = steg_encode(image, steg_message)
         
@@ -61,7 +62,7 @@ def encode_image():
         return jsonify({
             'success': True,
             'image_url': image_url,
-            'encrypted_message': encrypted_text,
+            'encrypted_message': steg_message,
             'shifted_alphabet': shifted_alphabet
         })
         
@@ -75,15 +76,14 @@ def decode_image():
     if not data or 'image_url' not in data:
         return jsonify({'error': 'Image URL is required'}), 400
     
-    # Handle relative URLs
     image_url = data['image_url']
     if image_url.startswith('/'):
         image_url = request.host_url.rstrip('/') + image_url
-        
+    
     # Get cipher parameters with defaults
-    alphabet = data.get('alphabet', 'abcdefghijklmnopqrstuvwxyz')
-    case_strategy = data.get('case_strategy', 'maintain')
-    ignore_foreign = data.get('ignore_foreign', False)
+    alphabet = data.get('alphabet')
+    case_strategy = data.get('case_strategy')
+    ignore_foreign = data.get('ignore_foreign')
     
     try:
         # Download and load image

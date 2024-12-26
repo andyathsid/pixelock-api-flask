@@ -2,8 +2,13 @@ def preprocess_text(text):
     """Preprocess text by keeping all characters as literals"""
     return text.encode('unicode_escape').decode('utf-8')
 
-def caesar_cipher(text, alphabet, shift, mode='encrypt', case_strategy='strict', ignore_foreign=False):
-    """Encrypts or decrypts text using the Caesar cipher."""
+def caesar_cipher(text, alphabet, shift, mode, case_strategy, ignore_foreign):
+    """
+    Encrypts or decrypts text using the Caesar cipher.
+    
+    Args:
+        ignore_foreign (bool): If True, foreign characters not in alphabet are ignored
+    """
     result = ""
     
     # Create case-specific alphabets if needed
