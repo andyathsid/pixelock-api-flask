@@ -35,55 +35,56 @@ Inspired by  [cryptii.com caesar cipher](https://cryptii.com/pipes/caesar-cipher
 ### Local Setup
 
 1. Clone the repository:
-```bash
-git clone https://github.com/andyathsid/pixelock-api-flask.git
-cd pixelock-api-flask
-```
+    ```bash
+    git clone https://github.com/andyathsid/pixelock-api-flask.git
+    cd pixelock-api-flask
+    ```
 
 2. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-```
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+    ```
 
 3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+    ```bash
+    pip install -r requirements.txt
+    ```
 
 4. Run the server:
 
-Use a WSGI server to start the app. You may encounter issues if you use the Flask development server instead.
-#### On Windows (Waitress)
-```bash
-# Install Waitress if not already installed
-pip install waitress
+    Use a WSGI server to start the app. You may encounter issues if you use the Flask development server instead.
+    #### On Windows (Waitress)
 
-waitress-serve --host=0.0.0.0 --port=5000 app:app
-```
+    ```bash
+    # Install Waitress if not already installed
+    pip install waitress
 
-#### On Linux (Gunicorn)
-```bash
-# Install Gunicorn if not already installed
-pip install gunicorn
+    waitress-serve --host=0.0.0.0 --port=5000 app:app
+    ```
 
-# Run the server
-gunicorn --bin 0.0.0.0:5000 --timeout 300 --workers 2 --worker-tmp-dir /dev/shm app:app # Change temporary directory to /dev/shm and set minimum workers to 2 to improve performance 
-```
+    #### On Linux (Gunicorn)
+    ```bash
+    # Install Gunicorn if not already installed
+    pip install gunicorn
+
+    # Run the server
+    gunicorn --bin 0.0.0.0:5000 --timeout 300 --workers 2 --worker-tmp-dir /dev/shm app:app # Change temporary directory to /dev/shm and set minimum workers to 2 to improve performance 
+    ```
 
 ### Docker Setup
 
 1. Ensure Docker is installed on your system. If not, install it from [Docker's official website](https://www.docker.com/).
 
 1. Build the Docker image:
-```bash
-docker build -t pixelock-api .
-```
+    ```bash
+    docker build -t pixelock-api .
+    ```
 
 2. Run the Docker container:
-```bash
-docker run -p 5000:5000 pixelock-api
-```
+    ```bash
+    docker run -p 5000:5000 pixelock-api
+    ```
 
 ## 📁 Project Structure
 ```bash
@@ -99,8 +100,51 @@ notebooks/         # Development notebooks
 
 ## 🔧 API Endpoints
 
-- `POST api/encode`: Encrypt text using Caesar Cipher and hide the message in an image via LSB steganography
+- `POST api/encode`: Encrypt text using Caesar Cipher and hide the message in 
+an image via LSB steganography 
+    - Example Request Body:
+    
+        ```json
+        {
+            "image_url": "https://example.com/image.jpg",
+            "message": "This is a test message!",
+            "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
+            "key": 7,
+            "case_strategy": "maintain",
+            "ignore_foreign": false
+        }
+        ```
+    - Example Response:
+
+        ```json
+        {
+            "success": true,
+            "encrypted_message": "Kj;b ;b a ksbk psbbaos!",
+            "image_url": "http://api.example.com/static/uploads/20241226_134326_e44d8b17.png",
+            "shifted_alphabet": "crl/=\\oeuidhtns-;qjkxbmwvz`,.pyfg"
+        }
+        ```
 - `POST api/decode`: Decrypt text using Caesar Cipher and extract hidden message from an image via LSB steganography
+    - Example Request Body:
+    
+        ```json
+        {
+            "image_url": "https://example.com/encoded-image.png",
+            "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
+            "case_strategy": "maintain",
+            "ignore_foreign": false
+        }
+        ```
+    - Example Response:
+
+        ```json
+        {
+            "success": true,
+            "decrypted_message": "This is a test message!",
+            "encrypted_message": "Kj;b ;b a ksbk psbbaos!",
+            "shift_key": 7
+        }
+        ```
 
 ## 🧪 Testing
 
