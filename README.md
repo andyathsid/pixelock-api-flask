@@ -100,51 +100,88 @@ notebooks/         # Development notebooks
 
 ## 🔧 API Endpoints
 
-- `POST api/encode`: Encrypt text using Caesar Cipher and hide the message in 
-an image via LSB steganography 
-    - Example Request Body:
-    
-        ```json
-        {
-            "image_url": "https://example.com/image.jpg",
-            "message": "This is a test message!",
-            "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
-            "key": 7,
-            "case_strategy": "maintain",
-            "ignore_foreign": false
-        }
-        ```
-    - Example Response:
+### Encode Endpoints
 
-        ```json
-        {
-            "success": true,
-            "encrypted_message": "Kj;b ;b a ksbk psbbaos!",
-            "image_url": "http://api.example.com/static/uploads/20241226_134326_e44d8b17.png",
-            "shifted_alphabet": "crl/=\\oeuidhtns-;qjkxbmwvz`,.pyfg"
-        }
-        ```
-- `POST api/decode`: Decrypt text using Caesar Cipher and extract hidden message from an image via LSB steganography
+#### 1. URL-based Encoding
+- `POST api/encode`: Encrypt text and hide in image from URL
     - Example Request Body:
-    
-        ```json
-        {
-            "image_url": "https://example.com/encoded-image.png",
-            "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
-            "case_strategy": "maintain",
-            "ignore_foreign": false
-        }
-        ```
+    ```json
+    {
+        "image_url": "https://example.com/image.jpg",
+        "message": "This is a test message!",
+        "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
+        "key": 7,
+        "case_strategy": "maintain",
+        "ignore_foreign": false
+    }
+    ```
     - Example Response:
+    ```json
+    {
+        "success": true,
+        "encrypted_message": "Kj;b ;b a ksbk psbbaos!",
+        "image_url": "http://api.example.com/static/uploads/20241226_134326_e44d8b17.png",
+        "shifted_alphabet": "crl/=\\oeuidhtns-;qjkxbmwvz`,.pyfg"
+    }
+    ```
 
-        ```json
-        {
-            "success": true,
-            "decrypted_message": "This is a test message!",
-            "encrypted_message": "Kj;b ;b a ksbk psbbaos!",
-            "shift_key": 7
-        }
-        ```
+#### 2. File Upload Encoding
+- `POST api/encode/upload`: Encrypt text and hide in uploaded image
+    - Request Format: `multipart/form-data`
+    - Form Fields:
+        - `image`: Image file
+        - [data](http://_vscodecontentref_/0): JSON string containing parameters
+    - Example Data JSON:
+    ```json
+    {
+        "message": "This is a test message!",
+        "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
+        "key": 7,
+        "case_strategy": "maintain",
+        "ignore_foreign": false
+    }
+    ```
+    - Example Response: Same as `/encode` endpoint
+
+### Decode Endpoints
+
+#### 1. URL-based Decoding
+- `POST api/decode`: Extract and decrypt message from image URL
+    - Example Request Body:
+    ```json
+    {
+        "image_url": "https://example.com/encoded-image.png",
+        "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
+        "case_strategy": "maintain",
+        "ignore_foreign": false
+    }
+    ```
+    - Example Response:
+    ```json
+    {
+        "success": true,
+        "decrypted_message": "This is a test message!",
+        "encrypted_message": "Kj;b ;b a ksbk psbbaos!",
+        "shift_key": 7
+    }
+    ```
+
+#### 2. File Upload Decoding
+- `POST api/decode/upload`: Extract and decrypt message from uploaded image
+    - Request Format: `multipart/form-data`
+    - Form Fields:
+        - `image`: Encoded image file
+        - [data](http://_vscodecontentref_/1): JSON string containing parameters
+    - Example Data JSON:
+    ```json
+    {
+        "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
+        "case_strategy": "maintain",
+        "ignore_foreign": false
+    }
+    ```
+    - Example Response: Same as `/decode` endpoint
+
 
 ## 🧪 Testing
 
