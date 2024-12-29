@@ -3,12 +3,7 @@ def preprocess_text(text):
     return text.encode('unicode_escape').decode('utf-8')
 
 def caesar_cipher(text, alphabet, shift, mode, case_strategy, ignore_foreign):
-    """
-    Encrypts or decrypts text using the Caesar cipher.
-    
-    Args:
-        ignore_foreign (bool): If True, foreign characters not in alphabet are ignored
-    """
+    """Encrypts or decrypts text using the Caesar cipher."""
     result = ""
     
     # Create case-specific alphabets if needed
@@ -18,8 +13,12 @@ def caesar_cipher(text, alphabet, shift, mode, case_strategy, ignore_foreign):
     
     for char in text:
         if case_strategy == 'strict':
-            if char in alphabet:
-                index = alphabet.index(char)
+            # First check if char is in alphabet regardless of case
+            char_in_alphabet = char.lower() in alphabet.lower() if ignore_foreign else char in alphabet
+            
+            if char_in_alphabet:
+                # For strict mode with ignore_foreign, use the lowercase version
+                index = alphabet.lower().index(char.lower()) if ignore_foreign else alphabet.index(char)
                 if mode == 'encrypt':
                     new_index = (index + shift) % len(alphabet)
                 else:
@@ -29,8 +28,9 @@ def caesar_cipher(text, alphabet, shift, mode, case_strategy, ignore_foreign):
                 result += char
                 
         elif case_strategy == 'maintain':
-            if char.lower() in lower_alphabet:
-                index = lower_alphabet.index(char.lower())
+            char_lower = char.lower()
+            if char_lower in lower_alphabet:
+                index = lower_alphabet.index(char_lower)
                 if mode == 'encrypt':
                     new_index = (index + shift) % len(alphabet)
                 else:
@@ -57,7 +57,7 @@ def caesar_cipher(text, alphabet, shift, mode, case_strategy, ignore_foreign):
     return result
 
 def encode_key(key, alphabet):
-    """Encodes the key to a string using the given alphabet (base conversion)."""
+    """Encodes the key to a string using the given alphabet."""
     base = len(alphabet)
     if key == 0:
         return alphabet[0]
@@ -66,7 +66,7 @@ def encode_key(key, alphabet):
     while key:
         digits.append(alphabet[key % base])
         key //= base
-    return "".join(digits[::-1])  # Reverse to get correct order
+    return "".join(digits[::-1])
 
 def decode_key(encoded_key, alphabet):
     """Decodes the key from a string to an integer."""
