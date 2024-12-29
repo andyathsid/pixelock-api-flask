@@ -13,7 +13,7 @@ import json
 
 api = Blueprint('api', __name__)
 
-@api.route('/encrypt', methods=['POST'])
+@api.route('/encrypt/internal-key', methods=['POST'])
 def encode_image_upload():
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
@@ -73,7 +73,7 @@ def encode_image_upload():
     except Exception as e:
         return jsonify({'error': f'Error processing request: {str(e)}'}), 500
     
-@api.route('/decrypt', methods=['POST'])
+@api.route('/decrypt/internal-key', methods=['POST'])
 def decode_image_upload():
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
@@ -101,6 +101,125 @@ def decode_image_upload():
             case_strategy, ignore_foreign, encrypted_text = rest.split('|', 2)
             ignore_foreign = bool(int(ignore_foreign))
             shift_key = decode_key(encoded_key, alphabet)
+            
+            decrypted_text = caesar_cipher(
+                encrypted_text,
+                alphabet,
+                shift_key,
+                mode='decrypt',
+                case_strategy=case_strategy,
+                ignore_foreign=ignore_foreign
+            )
+            
+            return jsonify({
+                'decrypted_message': decrypted_text,
+                'encrypted_message': encrypted_text,
+                'shift_key': shift_key,
+                'case_strategy': case_strategy,
+                'ignore_foreign': ignore_foreign
+            })
+            
+        except ValueError:
+            return jsonify({'error': 'Invalid message format in image'}), 400
+            
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Invalid JSON data'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Error processing request: {str(e)}'}), 500
+    
+@api.route('/encrypt/external-key', methods=['POST'])
+def encode_image_external_key():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image file provided'}), 400
+        
+    image_file = request.files['image']
+    if image_file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    data = request.form.get('data')
+    if not data:
+        return jsonify({'error': 'Message data is required'}), 400
+        
+    try:
+        data = json.loads(data)
+        
+        if 'message' not in data:
+            return jsonify({'error': 'Message is required'}), 400
+            
+        shift_key = data.get('key')
+        alphabet = data.get('alphabet')
+        case_strategy = data.get('case_strategy')
+        ignore_foreign = data.get('ignore_foreign')
+        
+        # Load image
+        image_bytes = BytesIO(image_file.read())
+        image = load_image(image_bytes)
+        
+        # Preprocess and encrypt the message
+        processed_text = preprocess_text(data['message'])
+        encrypted_text = caesar_cipher(
+            processed_text,
+            alphabet,
+            shift_key,
+            mode='encrypt',
+            case_strategy=case_strategy,
+            ignore_foreign=ignore_foreign
+        )
+        
+        # Include only minimal metadata (no key)
+        metadata = f"{case_strategy}|{1 if ignore_foreign else 0}|"
+        steg_message = f"EXT|{metadata}{encrypted_text}"  # EXT prefix indicates external key
+        encoded_image = steg_encode(image, steg_message)
+        
+        # Upload to S3
+        filename = generate_filename()
+        image_url = upload_image(encoded_image, filename)
+        
+        return jsonify({
+            'image_url': image_url,
+            'encrypted_message': encrypted_text,
+            'shifted_alphabet': shift_alphabet(alphabet, shift_key)
+        })
+        
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Invalid JSON data'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Error processing request: {str(e)}'}), 500
+
+@api.route('/decrypt/external-key', methods=['POST'])
+def decode_image_external_key():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image file provided'}), 400
+        
+    image_file = request.files['image']
+    if image_file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    data = request.form.get('data')
+    if not data:
+        return jsonify({'error': 'Parameters data is required'}), 400
+        
+    try:
+        data = json.loads(data)
+        alphabet = data.get('alphabet')
+        shift_key = data.get('key')
+        
+        if not shift_key:
+            return jsonify({'error': 'Decryption key is required'}), 400
+        
+        # Load and decode image
+        image_bytes = BytesIO(image_file.read())
+        image = load_image(image_bytes)
+        steg_message = steg_decode(image)
+        
+        try:
+            # Verify external key format and extract metadata
+            prefix, rest = steg_message.split('|', 1)
+            if prefix != 'EXT':
+                return jsonify({'error': 'Image was not encrypted with external key'}), 400
+                
+            case_strategy, ignore_foreign, encrypted_text = rest.split('|', 2)
+            ignore_foreign = bool(int(ignore_foreign))
             
             decrypted_text = caesar_cipher(
                 encrypted_text,
