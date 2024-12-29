@@ -7,7 +7,7 @@ This project is a Flask application that provides an API for encoding and decodi
 ## 🌟 Features
 
 ### Caesar Cipher
-Inspired by  [cryptii.com caesar cipher](https://cryptii.com/pipes/caesar-cipher) implementation by [Wierk](https://wierk.lu/)
+Inspired by [cryptii.com caesar cipher](https://cryptii.com/pipes/caesar-cipher) implementation by [Wierk](https://wierk.lu/)
 - Multiple case handling strategies:
   - Strict: Preserves exact casing
   - Maintain: Keeps original character case
@@ -21,14 +21,21 @@ Inspired by  [cryptii.com caesar cipher](https://cryptii.com/pipes/caesar-cipher
 - Secure message embedding and extraction
 - Maintains visual image quality
 
+### Storage
+- AWS S3 integration for image storage
+- Secure and scalable cloud storage
+- Direct S3 URL generation for processed images
+
 ## 📦 Prerequisites
 
 - Python 3.11+
+- AWS Account with S3 bucket
 - Key dependencies:
-  - Flask 3.0.3
-  - scikit-image 0.24.0
-  - numpy 1.26.4
-  - matplotlib 3.9.2
+  - Flask 
+  - scikit-image 
+  - numpy 
+  - boto3
+  - python-decouple
 
 ## 🚀 Installation
 
@@ -51,39 +58,49 @@ Inspired by  [cryptii.com caesar cipher](https://cryptii.com/pipes/caesar-cipher
     pip install -r requirements.txt
     ```
 
-4. Run the server:
+4. Configure AWS credentials:
+    Create a [.env](http://_vscodecontentref_/1) file with your AWS credentials:
+    ```
+    AWS_ACCESS_KEY=your_access_key
+    AWS_SECRET_KEY=your_secret_key
+    AWS_REGION=your_region
+    AWS_BUCKET=your_bucket_name
+    ```
 
-    Use a WSGI server to start the app. You may encounter issues if you use the Flask development server instead.
+5. Run the server:
     #### On Windows (Waitress)
-
     ```bash
-    # Install Waitress if not already installed
     pip install waitress
-
-    waitress-serve --host=0.0.0.0 --port=5000 app:app
+    waitress-serve --host=0.0.0.0 --port=5000 wsgi:app
     ```
 
     #### On Linux (Gunicorn)
     ```bash
-    # Install Gunicorn if not already installed
     pip install gunicorn
-
-    # Run the server
-    gunicorn --bin 0.0.0.0:5000 --timeout 300 --workers 2 --worker-tmp-dir /dev/shm app:app # Change temporary directory to /dev/shm and set minimum workers to 2 to improve performance 
+    gunicorn --bind 0.0.0.0:5000 --timeout 300 --workers 2 --worker-tmp-dir /dev/shm wsgi:app
     ```
 
 ### Docker Setup
 
-1. Ensure Docker is installed on your system. If not, install it from [Docker's official website](https://www.docker.com/).
+1. Ensure Docker is installed on your system.
 
-1. Build the Docker image:
+2. Build the Docker image:
     ```bash
     docker build -t pixelock-api .
     ```
 
-2. Run the Docker container:
+3. Run the Docker container:
     ```bash
-    docker run -p 5000:5000 pixelock-api
+    # Using .env file (recommended)
+    docker run -p 5000:5000 --env-file .env pixelock-api
+
+    # Or specify environment variables directly
+    docker run -p 5000:5000 \
+    -e AWS_ACCESS_KEY=your_access_key \
+    -e AWS_SECRET_KEY=your_secret_key \
+    -e AWS_BUCKET=your_bucket_name \
+    -e AWS_REGION=your_region \
+    pixelock-api
     ```
 
 ## 📁 Project Structure
@@ -91,23 +108,26 @@ Inspired by  [cryptii.com caesar cipher](https://cryptii.com/pipes/caesar-cipher
 app/
 ├── routes/         # API endpoints
 ├── services/       # Core encryption & steganography logic
-└── utils/          # Helper functions
+└── utils/          # Helper functions and S3 storage
 data/
-├── encoded/        # Processed images
-└── raw/           # Original images
+├── encoded/        # Sample encoded images
+└── raw/           # Sample original images
 notebooks/         # Development notebooks
 ```
 
 ## 🔧 API Endpoints
 
-### Encode Endpoints
+### File Upload Endpoints
 
-#### 1. URL-based Encoding
-- `POST api/encode`: Encrypt text and hide in image from URL
-    - Example Request Body:
+#### 1. Encryption Endpoint
+- `POST /api/encrypt`: Encrypt text and hide in uploaded image
+    - Request Format: `multipart/form-data`
+    - Form Fields:
+        - `image`: Image file
+        - `data`: JSON string containing parameters
+    - Example Data JSON:
     ```json
     {
-        "image_url": "https://example.com/image.jpg",
         "message": "This is a test message!",
         "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
         "key": 7,
@@ -118,74 +138,38 @@ notebooks/         # Development notebooks
     - Example Response:
     ```json
     {
-        "success": true,
+        "image_url": "https://pixelock-images.s3.ap-southeast-1.amazonaws.com/uploads/20240226_134326_e44d8b17.png",
         "encrypted_message": "Kj;b ;b a ksbk psbbaos!",
-        "image_url": "http://api.example.com/static/uploads/20241226_134326_e44d8b17.png",
         "shifted_alphabet": "crl/=\\oeuidhtns-;qjkxbmwvz`,.pyfg"
     }
     ```
 
-#### 2. File Upload Encoding
-- `POST api/encode/upload`: Encrypt text and hide in uploaded image
+#### 2. Decryption Endpoint
+- `POST /api/decrypt`: Extract and decrypt message from uploaded image
     - Request Format: `multipart/form-data`
     - Form Fields:
-        - `image`: Image file
-        - [data](http://_vscodecontentref_/0): JSON string containing parameters
+        - [image](http://_vscodecontentref_/0): Encoded image file
+        - [data](http://_vscodecontentref_/1): JSON string containing parameters
     - Example Data JSON:
     ```json
     {
-        "message": "This is a test message!",
-        "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
-        "key": 7,
-        "case_strategy": "maintain",
-        "ignore_foreign": false
-    }
-    ```
-    - Example Response: Same as `/encode` endpoint
-
-### Decode Endpoints
-
-#### 1. URL-based Decoding
-- `POST api/decode`: Extract and decrypt message from image URL
-    - Example Request Body:
-    ```json
-    {
-        "image_url": "https://example.com/encoded-image.png",
-        "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
-        "case_strategy": "maintain",
-        "ignore_foreign": false
+        "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz"
     }
     ```
     - Example Response:
     ```json
     {
-        "success": true,
         "decrypted_message": "This is a test message!",
         "encrypted_message": "Kj;b ;b a ksbk psbbaos!",
-        "shift_key": 7
-    }
-    ```
-
-#### 2. File Upload Decoding
-- `POST api/decode/upload`: Extract and decrypt message from uploaded image
-    - Request Format: `multipart/form-data`
-    - Form Fields:
-        - `image`: Encoded image file
-        - [data](http://_vscodecontentref_/1): JSON string containing parameters
-    - Example Data JSON:
-    ```json
-    {
-        "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
+        "shift_key": 7,
         "case_strategy": "maintain",
         "ignore_foreign": false
     }
     ```
-    - Example Response: Same as `/decode` endpoint
-
 
 ## 🧪 Testing
 
-You can test the API by making a test request:
+You can test the API by running the prepared test scripts:
 
 ```bash
 # Using default BASE_URL (http://localhost:5000/api)
@@ -194,4 +178,7 @@ python app/tests/test_api.py
 # Or specify a custom BASE_URL
 export API_BASE_URL=http://your-api-url:5000/api
 python app/tests/test_api.py
+
+# Test S3 connection
+python app/tests/test_s3_connection.py
 ```
