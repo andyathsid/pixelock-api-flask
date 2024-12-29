@@ -1,10 +1,18 @@
 from flask import Flask
-import os
+from flask_cors import CORS
+from decouple import config
 from app.routes.api import api
 
-app = Flask(__name__)  
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
-app.register_blueprint(api, url_prefix='/api')
+def create_app():
+    app = Flask(__name__)
+    CORS(app)
+    
+    # Configure max content length
+    app.config['MAX_CONTENT_LENGTH'] = int(config('MAX_CONTENT_LENGTH', default=5242880))
+    
+    app.register_blueprint(api, url_prefix='/api')
+    
+    return app
 
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
+# Create the application instance
+app = create_app()
