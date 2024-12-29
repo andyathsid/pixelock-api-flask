@@ -13,6 +13,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code into the container
 COPY . .
 
+# Set default environment variables (will be overridden by --env-file)
+ENV AWS_ACCESS_KEY=""
+ENV AWS_SECRET_KEY=""
+ENV AWS_BUCKET=""
+ENV AWS_REGION=""
+ENV STORAGE_PROVIDER="s3"
+ENV MAX_CONTENT_LENGTH=5242880
+ENV ALLOWED_EXTENSIONS=png,jpg,jpeg
+
 # Expose the port the app runs on
 EXPOSE 5000
 
