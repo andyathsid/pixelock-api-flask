@@ -117,10 +117,11 @@ notebooks/         # Development notebooks
 
 ## 🔧 API Endpoints
 
-### File Upload Endpoints
+### Internal Key Endpoints
+These endpoints store the encryption key within the image metadata.
 
-#### 1. Encryption Endpoint
-- `POST /api/encrypt`: Encrypt text and hide in uploaded image
+#### 1. Internal Key Encryption
+- `POST /api/encrypt/internal-key`: Encrypt text and store key in image
     - Request Format: `multipart/form-data`
     - Form Fields:
         - `image`: Image file
@@ -144,8 +145,8 @@ notebooks/         # Development notebooks
     }
     ```
 
-#### 2. Decryption Endpoint
-- `POST /api/decrypt`: Extract and decrypt message from uploaded image
+#### 2. Internal Key Decryption
+- `POST /api/decrypt/internal-key`: Extract key and decrypt message from image
     - Request Format: `multipart/form-data`
     - Form Fields:
         - [image](http://_vscodecontentref_/0): Encoded image file
@@ -166,6 +167,29 @@ notebooks/         # Development notebooks
         "ignore_foreign": false
     }
     ```
+
+### External Key Endpoints
+These endpoints keep the encryption key separate from the image.
+
+#### 1. External Key Encryption
+- `POST /api/encrypt/external-key`: Encrypt text without storing key
+    - Request Format: Same as internal key encryption
+    - Example Response: Same as internal key encryption
+
+#### 2. External Key Decryption
+- `POST /api/decrypt/external-key`: Decrypt message using provided key
+    - Request Format: `multipart/form-data`
+    - Form Fields:
+        - [image](http://_vscodecontentref_/2): Encoded image file
+        - [data](http://_vscodecontentref_/3): JSON string containing parameters
+    - Example Data JSON:
+    ```json
+    {
+        "alphabet": "`,.pyfgcrl/=\\aoeuidhtns-;qjkxbmwvz",
+        "key": 7
+    }
+    ```
+    - Example Response: Same as internal key decryption
 
 ## 🧪 Testing
 
